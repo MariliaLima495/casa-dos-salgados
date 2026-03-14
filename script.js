@@ -16,32 +16,37 @@ const cartCountEl = document.getElementById('cart-count');
 let cart = [];
 
 // ==========================================
-// CARREGAR PRODUTOS DO CMS (NOVO)
+// CARREGAR PRODUTOS DO CMS
 // ==========================================
 async function loadProducts() {
     try {
-        // Busca a lista de arquivos na pasta que o CMS cria
-        // Nota: No GitHub Pages/Netlify, precisamos de um index ou buscar via API. 
-        // Para simplificar, o CMS gera arquivos em data/cardapio.
-        
-        // Aqui buscamos o arquivo que o CMS gera (index.json ou via fetch da pasta)
-        // Como o Decap CMS gera arquivos .md ou .json, vamos buscar a pasta:
+        // CORRIGIDO: Link completo para a pasta de dados no seu GitHub
         const response = await fetch('https://api.github.com');
+        
+        if (!response.ok) throw new Error('Não foi possível carregar os arquivos');
+        
         const files = await response.json();
 
+        // Limpa a mensagem de "Carregando" apenas da primeira seção
+        const loadingMsg = document.querySelector('.loading-msg');
+        if (loadingMsg) loadingMsg.remove();
+
         for (const file of files) {
+            // Busca o conteúdo de cada arquivo JSON individual
             const res = await fetch(file.download_url);
             const product = await res.json();
             renderProduct(product);
         }
     } catch (error) {
         console.error("Erro ao carregar produtos:", error);
+        const fritos = document.getElementById('fritos');
+        if(fritos) fritos.innerHTML += '<p style="color:red">Erro ao carregar o cardápio. Verifique a conexão.</p>';
     }
 }
 
 function renderProduct(product) {
-    // Escolhe a seção correta baseada na categoria
-    const categoryId = product.category.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    // CORRIGIDO: Garante que o ID da categoria ignore acentos e espaços
+    const categoryId = product.category.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "");
     const section = document.getElementById(categoryId);
     
     if (!section) return;
@@ -119,8 +124,8 @@ window.removeItem = function(index) {
 // FINALIZAR PEDIDO
 // ===============================
 sendOrderBtn.addEventListener('click', () => {
-    if (cart.length === 0 || !customerName.value || !customerAddress.value || !paymentMethod.value) {
-        alert('Preencha todos os campos!');
+    if (cart.length === 0 || !customerName.value.trim() || !customerAddress.value.trim() || !paymentMethod.value) {
+        alert('Por favor, preencha todos os campos do pedido!');
         return;
     }
 
@@ -130,18 +135,22 @@ sendOrderBtn.addEventListener('click', () => {
     });
     message += `\n*Total: R$ ${cartTotalEl.textContent}*`;
     message += `\n\n*Cliente:* ${customerName.value}\n*Endereço:* ${customerAddress.value}\n*Pagamento:* ${paymentMethod.value}`;
+    
+    if (orderNote.value.trim()) {
+        message += `\n*Obs:* ${orderNote.value}`;
+    }
+    
     message += `\n\n*Site:* https://casa-dos-salgados-barra.netlify.app`;
 
+    // CORRIGIDO: Link completo com número e mensagem
     window.open(`https://wa.me{encodeURIComponent(message)}`, '_blank');
 });
 
 clearCartBtn.addEventListener('click', () => {
-    cart = [];
-    updateCart();
-});
-
-viewCartBtn.addEventListener('click', () => {
-    document.getElementById('cart').scrollIntoView({ behavior: 'smooth' });
+    if(confirm("Deseja realmente limpar o carrinho?")) {
+        cart = [];
+        updateCart();
+    }
 });
 
 // Inicia o carregamento
