@@ -1,14 +1,190 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Painel de Controle - Casa dos Salgados</title>
-    <!-- Carrega o script do Decap CMS -->
-    <script src="https://unpkg.com@^3.0.0/dist/decap-cms.js"></script>
-  </head>
-  <body>
-    
-    </script>
-  </body>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Casa dos Salgados</title>
+<meta name="description" content="Cardápio digital da Casa dos Salgados. Faça seu pedido online.">
+<link rel="icon" href="favicon.ico">
+<link rel="stylesheet" href="style.css">
+<style>
+/* BOTÃO FIXO ATUALIZADO */
+#view-cart-btn {
+  position: fixed;
+  bottom: 25px; /* Mantém uma distância elegante da base */
+  left: 50%;
+  transform: translateX(-50%); 
+  background: #ff3b30; /* Vermelho oficial da marca */
+  color: white;
+  border: none;
+  border-radius: 50px;
+  width: 90%;
+  max-width: 400px;
+  padding: 15px 20px;
+  cursor: pointer;
+  z-index: 1000;
+  font-weight: bold;
+  font-size: 16px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  display: none; /* Começa escondido, o JS mostra quando houver itens */
+  transition: all 0.3s ease;
+}
+
+
+/* Contador dentro do botão */
+#cart-count {
+  background: white;
+  color: #000000;
+  padding: 2px 8px;
+  border-radius: 50%;
+  margin-left: 8px;
+  font-size: 14px;
+}
+
+.cart-field {
+  margin-bottom: 10px;
+}
+.cart-field input, .cart-field select, .cart-field textarea {
+  width: 100%;
+  padding: 8px;
+  margin-top: 4px;
+  box-sizing: border-box;
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Casa dos Salgados</h1>
+  <p>Faça seu pedido abaixo</p>
+</header>
+
+<nav class="categories">
+  <a href="#fritos">Fritos</a>
+  <a href="#porcoes">Porções</a>
+  <a href="#bebidas">Bebidas</a>
+  <a href="#doces">Doces</a>
+</nav>
+
+<main class="container">
+  <!-- FRITOS -->
+  <section id="fritos" class="menu-section">
+    <h2>Fritos</h2>
+    <article class="menu-item">
+      <div class="item-details">
+        <h3>Coxinha de Frango</h3>
+        <p>Salgado frito recheado com frango.</p>
+        <span class="price">R$ 1,99</span>
+      </div>
+      <button type="button" class="add-btn" data-name="Coxinha de Frango" data-price="1.99">+</button>
+    </article>
+    <article class="menu-item">
+      <div class="item-details">
+        <h3>Coxinha de Charque</h3>
+        <p>Coxinha recheada com charque.</p>
+        <span class="price">R$ 1,99</span>
+      </div>
+      <button type="button" class="add-btn" data-name="Coxinha de Charque" data-price="1.99">+</button>
+    </article>
+  </section>
+
+  <!-- PORÇÕES -->
+  <section id="porcoes" class="menu-section">
+    <h2>Porções</h2>
+    <article class="menu-item">
+      <div class="item-details">
+        <h3>Mini Coxinha (10 un)</h3>
+        <span class="price">R$ 3,50</span>
+      </div>
+      <button type="button" class="add-btn" data-name="Mini Coxinha (10 un)" data-price="3.50">+</button>
+    </article>
+  </section>
+
+  <!-- BEBIDAS -->
+  <section id="bebidas" class="menu-section">
+    <h2>Bebidas</h2>
+    <article class="menu-item">
+      <div class="item-details">
+        <h3>Guaraná 1L</h3>
+        <span class="price">R$ 8,00</span>
+      </div>
+      <button type="button" class="add-btn" data-name="Guaraná 1L" data-price="8.00">+</button>
+    </article>
+  </section>
+
+  <!-- DOCES -->
+  <section id="doces" class="menu-section">
+    <h2>Doces</h2>
+    <article class="menu-item">
+      <div class="item-details">
+        <h3>Brigadeiro</h3>
+        <span class="price">R$ 2,50</span>
+      </div>
+      <button type="button" class="add-btn" data-name="Brigadeiro" data-price="2.50">+</button>
+    </article>
+  </section>
+
+  <!-- CARRINHO -->
+<div id="cart" class="cart-below">
+  <h2>Seu Pedido</h2>
+  <p id="empty-cart">Seu carrinho está vazio</p>
+  <ul id="cart-items"></ul>
+  <p class="cart-total">Total: R$ <span id="cart-total">0.00</span></p>
+
+  <!-- CAMPO NOME -->
+  <div class="cart-field">
+    <label for="customer-name">Nome:</label>
+    <input type="text" id="customer-name" placeholder="Seu nome">
+  </div>
+
+  <!-- CAMPO ENDEREÇO COM OBSERVAÇÃO -->
+  <div class="cart-field">
+    <label for="customer-address">
+      Endereço <span class="label-obs">(Adicione Residencial com Bloco e Apartamento)</span>
+    </label>
+    <input type="text" id="customer-address" placeholder="Ex: Rua Tal, 123 Barra de Jangada - Bloco 10, Ap 10">
+  </div>
+
+  <!-- FORMA DE PAGAMENTO -->
+  <div class="cart-field">
+    <label for="payment-method">Forma de pagamento:</label>
+    <select id="payment-method">
+      <option value="">Selecione</option>
+      <option value="Dinheiro">Dinheiro</option>
+      <option value="Cartão">Cartão</option>
+      <option value="Pix">Pix</option>
+    </select>
+  </div>
+
+  <textarea id="order-note" placeholder="Observações do pedido INCLUIR VALOR EM DINHEIRO PARA TROCO AQUI (opcional)"></textarea>
+  
+  <button type="button" id="clear-cart">Limpar Carrinho</button>
+  <button type="button" id="send-order">Enviar pedido pelo WhatsApp</button>
+</div>
+
+
+<!-- BOTÃO FIXO COM CONTADOR -->
+<button type="button" id="view-cart-btn">
+  Ver Pedido 🛒 <span id="cart-count">0</span>
+</button>
+
+<footer class="site-footer">
+  <div class="footer-content">
+    <h3>🍗 Casa dos Salgados</h3>
+    <p>Pedidos rápidos pelo WhatsApp</p>
+    <p>© 2026 Casa dos Salgados — Todos os direitos reservados</p>
+    <p class="dev-credit">
+      Sistema de pedidos desenvolvido por 
+      <a href="https://www.linkedin.com/in/mar%C3%ADlia-lima-393223277" target="_blank">Marília Lima</a>
+    </p>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+<script>
+// Rolar para o carrinho quando clicar no botão "Ver Pedido"
+document.getElementById('view-cart-btn').addEventListener('click', () => {
+  document.getElementById('cart').scrollIntoView({ behavior: 'smooth' });
+});
+</script>
+</body>
 </html>
