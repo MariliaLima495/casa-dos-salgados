@@ -1,7 +1,6 @@
 // ===============================
-// SELEÇÃO DE ELEMENTOS
+// CONFIGURAÇÕES E SELEÇÃO
 // ===============================
-const addBtns = document.querySelectorAll('.add-btn');
 const cartItemsEl = document.getElementById('cart-items');
 const cartTotalEl = document.getElementById('cart-total');
 const emptyCartEl = document.getElementById('empty-cart');
@@ -14,177 +13,136 @@ const orderNote = document.getElementById('order-note');
 const viewCartBtn = document.getElementById('view-cart-btn');
 const cartCountEl = document.getElementById('cart-count');
 
-// Carrinho com quantidade
 let cart = [];
 
 // ==========================================
-// FUNÇÃO PARA ATUALIZAR O BOTÃO FIXO
+// CARREGAR PRODUTOS DO CMS (NOVO)
 // ==========================================
-function updateViewCartButton() {
-  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-  cartCountEl.textContent = totalItems;
+async function loadProducts() {
+    try {
+        // Busca a lista de arquivos na pasta que o CMS cria
+        // Nota: No GitHub Pages/Netlify, precisamos de um index ou buscar via API. 
+        // Para simplificar, o CMS gera arquivos em data/cardapio.
+        
+        // Aqui buscamos o arquivo que o CMS gera (index.json ou via fetch da pasta)
+        // Como o Decap CMS gera arquivos .md ou .json, vamos buscar a pasta:
+        const response = await fetch('https://api.github.com');
+        const files = await response.json();
 
-  if (totalItems > 0) {
-    viewCartBtn.style.display = 'block';
-  } else {
-    viewCartBtn.style.display = 'none';
-  }
-}
-
-// ===============================
-// FUNÇÃO PARA ATUALIZAR O CARRINHO
-// ===============================
-function updateCart() {
-  cartItemsEl.innerHTML = '';
-
-  if (cart.length === 0) {
-    emptyCartEl.style.display = 'block';
-  } else {
-    emptyCartEl.style.display = 'none';
-
-    cart.forEach((item, index) => {
-      const li = document.createElement('li');
-      li.classList.add('cart-item');
-
-      const info = document.createElement('span');
-      info.textContent = `${item.name} - R$ ${(item.price * item.quantity).toFixed(2)}`;
-
-      const controls = document.createElement('div');
-      controls.style.display = 'flex';
-      controls.style.alignItems = 'center';
-      controls.style.gap = '5px';
-
-      const minusBtn = document.createElement('button');
-      minusBtn.type = 'button';
-      minusBtn.textContent = '➖';
-      minusBtn.classList.add('quantity-btn');
-      minusBtn.addEventListener('click', () => {
-        if (item.quantity > 1) {
-          item.quantity--;
-        } else {
-          cart.splice(index, 1);
+        for (const file of files) {
+            const res = await fetch(file.download_url);
+            const product = await res.json();
+            renderProduct(product);
         }
-        updateCart();
-      });
+    } catch (error) {
+        console.error("Erro ao carregar produtos:", error);
+    }
+}
 
-      const quantity = document.createElement('span');
-      quantity.textContent = item.quantity;
-      quantity.style.minWidth = '20px';
-      quantity.style.textAlign = 'center';
+function renderProduct(product) {
+    // Escolhe a seção correta baseada na categoria
+    const categoryId = product.category.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const section = document.getElementById(categoryId);
+    
+    if (!section) return;
 
-      const plusBtn = document.createElement('button');
-      plusBtn.type = 'button';
-      plusBtn.textContent = '➕';
-      plusBtn.classList.add('quantity-btn');
-      plusBtn.addEventListener('click', () => {
-        item.quantity++;
-        updateCart();
-      });
-
-      const removeBtn = document.createElement('button');
-      removeBtn.type = 'button';
-      removeBtn.textContent = '❌';
-      removeBtn.classList.add('remove-btn');
-      removeBtn.addEventListener('click', () => {
-        cart.splice(index, 1);
-        updateCart();
-      });
-
-      controls.appendChild(minusBtn);
-      controls.appendChild(quantity);
-      controls.appendChild(plusBtn);
-      controls.appendChild(removeBtn);
-
-      li.appendChild(info);
-      li.appendChild(controls);
-      cartItemsEl.appendChild(li);
-    });
-  }
-
-  const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  cartTotalEl.textContent = total.toFixed(2);
-  updateViewCartButton();
+    const article = document.createElement('article');
+    article.classList.add('menu-item');
+    article.innerHTML = `
+      <div class="item-details">
+        <h3>${product.title}</h3>
+        <p>${product.description || ''}</p>
+        <span class="price">R$ ${parseFloat(product.price).toFixed(2)}</span>
+      </div>
+      <button type="button" class="add-btn" onclick="addToCart('${product.title}', ${product.price})">+</button>
+    `;
+    section.appendChild(article);
 }
 
 // ===============================
-// ADICIONAR ITEM AO CARRINHO
+// LÓGICA DO CARRINHO
 // ===============================
-addBtns.forEach((btn) => {
-  btn.addEventListener('click', (e) => {
-    const itemEl = e.target.closest('.menu-item');
-    const name = itemEl.querySelector('h3').textContent;
-    const priceText = itemEl.querySelector('.price').textContent;
-    const price = parseFloat(priceText.replace('R$', '').replace(',', '.').trim());
-
+window.addToCart = function(name, price) {
     const existingItem = cart.find((i) => i.name === name);
     if (existingItem) {
-      existingItem.quantity++;
+        existingItem.quantity++;
     } else {
-      cart.push({ name, price, quantity: 1 });
+        cart.push({ name, price, quantity: 1 });
     }
-
     updateCart();
-  });
-});
+};
+
+function updateViewCartButton() {
+    const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+    cartCountEl.textContent = totalItems;
+    viewCartBtn.style.display = totalItems > 0 ? 'block' : 'none';
+}
+
+function updateCart() {
+    cartItemsEl.innerHTML = '';
+    if (cart.length === 0) {
+        emptyCartEl.style.display = 'block';
+    } else {
+        emptyCartEl.style.display = 'none';
+        cart.forEach((item, index) => {
+            const li = document.createElement('li');
+            li.classList.add('cart-item');
+            li.innerHTML = `
+                <span>${item.name} - R$ ${(item.price * item.quantity).toFixed(2)}</span>
+                <div style="display:flex; align-items:center; gap:5px;">
+                    <button class="quantity-btn" onclick="changeQty(${index}, -1)">➖</button>
+                    <span>${item.quantity}</span>
+                    <button class="quantity-btn" onclick="changeQty(${index}, 1)">➕</button>
+                    <button class="remove-btn" onclick="removeItem(${index})">❌</button>
+                </div>
+            `;
+            cartItemsEl.appendChild(li);
+        });
+    }
+    const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    cartTotalEl.textContent = total.toFixed(2);
+    updateViewCartButton();
+}
+
+window.changeQty = function(index, delta) {
+    cart[index].quantity += delta;
+    if (cart[index].quantity <= 0) cart.splice(index, 1);
+    updateCart();
+};
+
+window.removeItem = function(index) {
+    cart.splice(index, 1);
+    updateCart();
+};
 
 // ===============================
-// LIMPAR CARRINHO
-// ===============================
-clearCartBtn.addEventListener('click', () => {
-  cart = [];
-  updateCart();
-  customerName.value = '';
-  customerAddress.value = '';
-  paymentMethod.value = '';
-  orderNote.value = '';
-});
-
-// ===============================
-// ENVIAR PEDIDO PELO WHATSAPP
+// FINALIZAR PEDIDO
 // ===============================
 sendOrderBtn.addEventListener('click', () => {
-  if (cart.length === 0) {
-    alert('O carrinho está vazio!');
-    return;
-  }
+    if (cart.length === 0 || !customerName.value || !customerAddress.value || !paymentMethod.value) {
+        alert('Preencha todos os campos!');
+        return;
+    }
 
-  if (
-    customerName.value.trim() === '' ||
-    customerAddress.value.trim() === '' ||
-    paymentMethod.value === ''
-  ) {
-    alert('Por favor, preencha nome, endereço e forma de pagamento.');
-    return;
-  }
+    let message = `🍗 *Pedido Casa dos Salgados*\n\n`;
+    cart.forEach(item => {
+        message += `- ${item.name} x ${item.quantity} = R$ ${(item.price * item.quantity).toFixed(2)}\n`;
+    });
+    message += `\n*Total: R$ ${cartTotalEl.textContent}*`;
+    message += `\n\n*Cliente:* ${customerName.value}\n*Endereço:* ${customerAddress.value}\n*Pagamento:* ${paymentMethod.value}`;
+    message += `\n\n*Site:* https://casa-dos-salgados-barra.netlify.app`;
 
-  let message = `🍗 *Pedido Casa dos Salgados*\n\n*Itens:*\n`;
-  cart.forEach((item) => {
-    message += `- ${item.name} x ${item.quantity} = R$ ${(item.price * item.quantity).toFixed(2)}\n`;
-  });
-  message += `\n*Total: R$ ${cartTotalEl.textContent}*\n`;
-  message += `\n*Nome:* ${customerName.value}\n`;
-  message += `*Endereço:* ${customerAddress.value}\n`;
-  message += `*Pagamento:* ${paymentMethod.value}\n`;
-  
-  if (orderNote.value.trim() !== '') {
-    message += `*Observações:* ${orderNote.value}\n`;
-  }
-
-  // LINK DO SITE PARA FICAR CLICÁVEL NO WHATSAPP
-  message += `\n*Pedido feito via:* https://casa-dos-salgados-barra.netlify.app`;
-
-  const whatsappNumber = '5581997215857'; 
-  const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
-  
-  window.open(url, '_blank');
+    window.open(`https://wa.me{encodeURIComponent(message)}`, '_blank');
 });
 
-// ===============================
-// ROLAGEM DO BOTÃO FIXO
-// ===============================
+clearCartBtn.addEventListener('click', () => {
+    cart = [];
+    updateCart();
+});
+
 viewCartBtn.addEventListener('click', () => {
-  const cartSection = document.getElementById('cart');
-  if(cartSection) {
-    cartSection.scrollIntoView({ behavior: 'smooth' });
-  }
+    document.getElementById('cart').scrollIntoView({ behavior: 'smooth' });
 });
+
+// Inicia o carregamento
+loadProducts();
