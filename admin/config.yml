@@ -1,15 +1,23 @@
 backend:
   name: git-gateway
-  branch: main
+  branch: main # Certifique-se de que no seu GitHub a branch se chama 'main'
+
+media_folder: "images" # Pasta para salvar fotos se você decidir usar depois
+public_folder: "/images"
 
 collections:
   - name: "cardapio"
     label: "Cardápio"
-    folder: "data/cardapio"
+    folder: "data/cardapio" # Local onde os produtos serão salvos no GitHub
     create: true
     slug: "{{title}}"
     fields:
       - { label: "Nome do Produto", name: "title", widget: "string" }
       - { label: "Preço", name: "price", widget: "number", value_type: "float" }
-      - { label: "Descrição", name: "description", widget: "text" }
-      - { label: "Categoria", name: "category", widget: "select", options:
+      - { label: "Descrição", name: "description", widget: "text", required: false }
+      - { 
+          label: "Categoria", 
+          name: "category", 
+          widget: "select", 
+          options: ["Fritos", "Porções", "Bebidas", "Doces"] 
+        }
